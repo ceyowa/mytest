@@ -10,3 +10,4 @@ JetBrains WebStorm 11.0.3
 5.  chrome定位talled问题
 https://github.com/fex-team/fex-team.github.io/blob/master/_posts/2015-01-14-chrome-stalled-problem-resolving-process.md
 http://sgdev-blog.blogspot.com/2014/01/maximum-concurrent-connection-to-same.html
+chrome://net-internals/#events&s=879662
