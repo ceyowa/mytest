@@ -1,0 +1,26 @@
+jstack -F -l 2864 > d:\aaa.text
+
+jmap -histo:live 2864 > d:\cfaggg.text
+
+jmap -dump:format=b,file=heap.hprof 2576
+
+jmap -dump:format=b,file=/opt/heap.hprof 5
+
+heap文件分析工具：
+jvisualvm.exe
+jhat
+
+jmap -heap > d:/bb.text 2864
+
+
+hat -J-Xmx512m <heap dump file>
+
+jstat -gccapacity 2864 >d:\dddccc.text
+
+jstat -options
+
+
+ps -e|grep java|grep -v grep 显示出所有的java进程，去处掉当前的grep进程。
+
+
+https://bugs.launchpad.net/ubuntu/+source/openjdk-7/+bug/1548434
