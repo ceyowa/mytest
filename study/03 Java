@@ -24,3 +24,6 @@ ps -e|grep java|grep -v grep 显示出所有的java进程，去处掉当前的gr
 
 
 https://bugs.launchpad.net/ubuntu/+source/openjdk-7/+bug/1548434
+
+GC知识：
+http://ifeve.com/useful-jvm-flags-part-6-throughput-collector/
