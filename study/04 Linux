@@ -2,6 +2,8 @@ http://www.runoob.com/linux/linux-tutorial.html
 
 新手指南： 新手应该知道的 26 个命令
 http://locez.com/Linux/common-command/
+使用 vi 编辑文件
+https://www.ibm.com/developerworks/cn/linux/l-lpic1-v3-103-8/index.html
 
 ps工具标识进程的5种状态码: 
 D 不可中断 uninterruptible sleep (usually IO) 
