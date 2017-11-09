@@ -1,0 +1,6 @@
+
+1. http://maven.apache.org/
+
+2.mvn package -pl meeting -am
+-am 选项可以同时构建所列模块的依赖模块
+http://blog.csdn.net/jason5186/article/details/39530087
