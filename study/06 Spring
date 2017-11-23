@@ -2,3 +2,6 @@
 springboot+mybatis多数据源最简解决方案
 https://zhuanlan.zhihu.com/p/25017961?refer=dreawer
 https://github.com/ityouknow/spring-boot-examples
+
+2. Spring Boot 1.5.x新特性：动态修改日志级别
+http://blog.csdn.net/dyc87112/article/details/54866244
