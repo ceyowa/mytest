@@ -50,3 +50,33 @@ top [参数]
 -u<用户名> 指定用户名
 -p<进程号> 指定进程
 -n<次数> 循环显示的次数
+
+
+[root@9bf53a30e849 /]# echo $TERM
+dumb
+[root@9bf53a30e849 /]# export TERM=dumb
+[root@9bf53a30e849 /]# top   
+
+1、查看CPU型号/核心/频率
+# cat /proc/cpuinfo
+
+该命令可查看系统CPU核心数、频率及其它特性。
+
+2、只查看cpu内核频率
+# cat /proc/cpuinfo |grep MHz|uniq
+
+3、查看物理CPU个数
+
+cat /proc/cpuinfo| grep "physical id"| sort| uniq| wc -l
+
+4、查看每个物理CPU中core的个数(即核数)
+
+cat /proc/cpuinfo| grep "cpu cores"| uniq
+
+5、查看逻辑CPU的个数
+
+cat /proc/cpuinfo| grep "processor"| wc -l
+
+6、查看CPU信息（型号）
+
+cat /proc/cpuinfo | grep name | cut -f2 -d: | uniq -c
