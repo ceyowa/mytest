@@ -1,0 +1,100 @@
+
+
+
+docker build -t hub.witcloud.huawei.com/dzion/dzion-service:1.0 .
+docker images
+docker run -d hub.witcloud.huawei.com/dzion/dzion-service:1.0
+docker exec -ti 0f453ef4e7d85f196b2697056544d345dc857aa7b7e16175841afbb35bd6625a /bin/bash
+docker ps -a
+docker logs 0f453ef4e7d8   
+docker rm $(docker ps  -a -q)
+docker images
+docker rmi hub.witcloud.huawei.com/dzion/dzion-service:1.0
+docker build -t hub.witcloud.huawei.com/dzion/dzion-service:1.0 .
+docker run -d hub.witcloud.huawei.com/dzion/dzion-service:1.0 
+docker ps 
+docker stop 54ed899fbb63
+docker exec -ti -p 8080: 6a09cbfa5f3d674e2d7602010b20d8557afccee22d20ae705e3cedd841876d49 /bin/bash  
+
+
+Docker帮助：
+https://yeasy.gitbooks.io/docker_practice/image/dockerfile/copy.html
+安装maven:
+https://blog.csdn.net/justinshane/article/details/50709562
+
+
+docker pull hub.witcloud.huawei.com/official/tomcat:8-jre8
+
+DOCKER_OPTS="--insecure-registry hub.witcloud.huawei.com --disable-legacy-registry=true --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:4243 --bip=172.16.32.1/24 --mtu=1472"
+
+scp -r root@xx.xx.xx.xx:/data/program ~/chenyouhua
+
+docker images
+docker ps
+docker exec -it aee391a52561 /bin/bash 
+docker build -f Dockerfile_dataaccess -t hub.witcloud.huawei.com/dword/dataaccess:latest .
+docker push hub.witcloud.huawei.com/dword/dataaccess:latest
+
+git clone 
+
+
+/opt/dataaccess/source/build.xml:49: warning: 'includeantruntime' was not set, defaulting to build.sysclasspath=last; set to false for repeatable buil
+
+在10.183.197.100的~/chenyouhua目录下构建基础镜像：
+cd ~/chenyouhua/baseimage
+docker build -f Dockerfile_base -t hub.witcloud.huawei.com/dword/base:latest .
+docker push hub.witcloud.huawei.com/dword/base:latest
+cd ~/chenyouhua/dockerfile
+docker build -f Dockerfile_dataaccess -t hub.witcloud.huawei.com/dword/dataaccess:latest .
+docker push hub.witcloud.huawei.com/dword/dataaccess:latest
+cd ~/chenyouhua/resourceimage
+docker build -f Dockerfile_resource -t hub.witcloud.huawei.com/dword/resource:latest .
+docker push hub.witcloud.huawei.com/dword/resource:latest
+
+
+mvn install --settings D:\GIT\dword-resource\config/setting.xml -Dmaven.repo.local=路径 -DskipTests
+
+docker run -d hub.witcloud.huawei.com/dword/resource:latest
+export PROJECT_DIR=/opt/resource
+export MAVEN_REPO=/opt/resource/repository
+cd /opt
+git clone http://pdzion:Huawei.com1@code-cd.huawei.com/dWord/resource.git
+cd cd $PROJECT_DIR
+git checkout Wdoc_visio
+cd $PROJECT_DIR/source/ 
+mvn clean && mvn install --settings $PROJECT_DIR/config/setting.xml -Dmaven.repo.local=$MAVEN_REPO -DskipTests
+
+
+git clone -b Wdoc_visio http://pdzion:Huawei.com1@code.huawei.com/dzion/dWord.git
+
+
+docker build -f Dockerfile_editor -t hub.witcloud.huawei.com/dword/editor:test .
+
+docker run -it hub.witcloud.huawei.com/dword/editor:test
+
+git clone -b Wdoc_visio http://pdzion:Huawei.com1@code-cd.huawei.com/dWord/resource.git
+
+解决maven下载慢的问题，使用已经编译好的：
+docker build -f Dockerfile_resourceins -t hub.witcloud.huawei.com/dword/resource:mvnistalled .
+
+docker run -it hub.witcloud.huawei.com/dword/resource:mvnistalled
+
+
+杀死所有正在运行的容器
+
+docker kill $(docker ps -a -q)
+删除所有已经停止的容器
+
+docker rm $(docker ps -a -q)
+删除所有未打 dangling 标签的镜像
+
+docker rmi $(docker images -q -f dangling=true)
+删除所有镜像
+
+docker rmi $(docker images -q)
+
+重命名：
+docker tag server:latest myname/server:latest
+or
+
+docker tag d583c3ac45fd myname/server:latest
