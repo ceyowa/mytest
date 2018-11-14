@@ -1,0 +1,44 @@
+// Place your settings in this file to overwrite the default settings
+{
+    "workbench.colorTheme": "Visual Studio Dark",
+    "http.proxy": "http://10.183.162.161:3128",
+
+    "files.autoSave": "afterDelay",
+    "http.proxyStrictSSL": false,
+    "extensions.ignoreRecommendations": true,
+    "docthis.authorName": "c00180444",
+    "docthis.includeAuthorTag": true,
+    "docthis.includeDescriptionTag": true,
+    "fileheader.Author": "c00180444",
+    "fileheader.LastModifiedBy": "{author}",
+    "fileheader.tpl": "/*\r\n * @Author: {author} \r\n * @Date: {createTime} \r\n */\r\n",
+
+    "html.format.unformatted": "",
+    
+    "tslint.jsEnable": true,
+    // ./app/bower_components/**|
+    "jshint.excludePath": "./node_modules/**",
+    
+    "workbench.iconTheme": "vscode-icons",
+    "vsicons.dontShowNewVersionMessage": true,
+    "window.zoomLevel": 1,
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "**/editor/lib/ckeditor/tests": true,
+        "**/ckeditor4.5.6": true,
+    },
+    "search.exclude": {
+        "**/node_modules": true,
+        "**/bower_components": true,
+        "**/editor/lib/ckeditor/tests": true,
+        "**/i18n":true,
+    },
+    "terminal.integrated.rendererType": "dom",
+    "workbench.colorCustomizations": {
+        "editor.selectionBackground": "#0865D6"
+    },
+}
