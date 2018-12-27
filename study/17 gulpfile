@@ -1,0 +1,128 @@
+gulp = require('gulp'),
+	uglify = require('gulp-uglify'),
+	rename = require('gulp-rename'),
+	imagemin = require('gulp-imagemin'),
+	cache = require('gulp-cache'),
+	jshint = require('gulp-jshint'),
+	minifycss = require('gulp-minify-css'),
+	runSequence = require('run-sequence'),
+	del = require('del'),
+	cheerio = require('gulp-cheerio'),
+	wiredep = require('gulp-wiredep'),
+	rimraf = require('rimraf'),
+	connect = require('gulp-connect'),
+	ngannotate = require('gulp-ng-annotate'),
+	openurl = require('openurl'),
+	filter = require('gulp-filter'),
+	useref = require('gulp-useref'),
+	rev = require('gulp-rev'),
+	revReplace = require('gulp-rev-replace'),
+	concat = require('gulp-concat'),
+	util = require('gulp-util'),
+	mapstream = require('map-stream'),
+	mergestream = require('merge-stream'),
+	replace = require('gulp-replace'),
+	compression = require('compression'),
+	templateCache = require('gulp-angular-templatecache'),
+	inject = require('gulp-inject'),
+	minimist = require('minimist'),
+	fileinclude = require('gulp-file-include'),
+	tap = require('gulp-tap');
+
+gulp.task('copy:i18ns', function () {
+	var appList = docManageApp.appName || docManageApp.apps;
+	appList.forEach(function (appName) {
+		gulp.src(docManageApp.appPath + '/' + appName + '/i18ns/*')
+			.pipe(gulp.dest(docManageApp.dist + '/' + appName + '/i18ns/'));
+	});
+	if (docManageApp.singleApp) {
+		return gulp.src(docManageApp.appPath + '/' + docManageApp.appName[0] + '/i18ns/*').pipe(
+			gulp.dest(docManageApp.dist + '/i18ns/'));
+	}
+});
+
+
+function buildHtml(appName, htmlPath, callback) {
+	var jsFilter = filter('**/*.js', { restore: true });
+	var cssFilter = filter('**/*.css', { restore: true });
+	htmlPath = htmlPath || 'index.html';
+	util.log('Building:' + appName + ',' + htmlPath);
+	var indexHtmlFilter = filter(['**/*', '!**/' + htmlPath], { restore: true });
+	var result = (buildTemplateCache(appName, htmlPath) || buildDynamicJSReference(appName, htmlPath) || gulp.src(docManageApp.appPath + '/' + appName + '/' + htmlPath))
+		.pipe(useref({ searchPath: docManageApp.appPath + '/' + appName }))
+		.pipe(jsFilter)
+		.pipe(ngannotate())
+		.pipe(uglify())
+		.pipe(jsFilter.restore)
+		.pipe(cssFilter)
+		.pipe(minifycss({ cache: true }))
+		.pipe(cssFilter.restore)
+		.pipe(indexHtmlFilter)
+		.pipe(rev())                // Rename the concatenated files (but not index.html)
+		.pipe(indexHtmlFilter.restore)
+		.pipe(revReplace())
+		.pipe(gulp.dest(docManageApp.dist + '/' + appName + '/'));
+	if (docManageApp.singleApp) {
+		result.pipe(gulp.dest(docManageApp.dist + '/'));
+	}
+	if (callback) {
+		result = result.on('end', callback);
+	}
+	return result;
+}
+function clientBuild(appName, callback) {
+	var buildhtmlList = buildHtmlMap[appName];
+	var i = 0;
+	function buildNext() {
+		util.log('Build html finish:' + buildhtmlList[i]);
+		i = i + 1;
+		if (buildhtmlList.length > i) {
+			return buildHtml(appName, buildhtmlList[i], buildNext);
+		} else {
+			if (callback) {
+				callback();
+			}
+			util.log('Build html over.');
+		}
+	}
+
+	if (buildhtmlList && buildhtmlList.length > 0) {
+		return buildHtml(appName, buildhtmlList[i], buildNext);
+	}
+	return buildHtml(appName, 'index.html', callback);
+}
+
+gulp.task('templateCache', function () {
+	if (docManageApp.singleApp) {
+		var appName = docManageApp.appName[0];
+		var templateResult = buildTemplateCache(appName);
+		if (!templateResult) {
+			return;
+		}
+
+		return templateResult.pipe(gulp.dest(docManageApp.dist + '/' + appName + '/'))
+			.pipe(gulp.dest(docManageApp.dist + '/'));
+	}
+});
+gulp.task('serve:stop', function () {
+	connect.serverClose();
+});
+
+function compressionServer() {
+	return [
+		compression({
+			threshold: '10kb',
+			
+			filter: shouldCompress,
+		})
+	];
+}
+
+gulp.task('prodserve', function () {
+	connect.server({
+		root: [docManageApp.dist],
+		// livereload : true,
+		port: 10000,
+		middleware: compressionServer
+	});
+});
