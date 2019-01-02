@@ -72,6 +72,8 @@ https://www.ibm.com/search?q=Java+%E7%BC%96%E7%A8%8B%E7%9A%84%E5%8A%A8%E6%80%81%
 
 JAVA基础
 https://data-flair.training/blogs/design-patterns-in-java/
+J2EE design patterns
+https://stackabuse.com/java-j2ee-design-patterns/
 
 关于java字节码的处理，目前有很多工具，如javassist，bcel，asm,cglib，以及jdk6引入的JavaCompiler等。
 
