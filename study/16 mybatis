@@ -54,7 +54,7 @@
 			<property name="enableSubPackages" value="false" />
 		</javaClientGenerator>
         <!--<table tableName="dzion_fra_hardware_*" enableCountByExample="false" -->
-		<table tableName="dzion_fra_hardware_modifycomment" enableCountByExample="false"
+		<table tableName="dzion_fra_hardware_*" enableCountByExample="false"
 			enableUpdateByExample="false" enableDeleteByExample="false"
 			enableSelectByExample="false" selectByExampleQueryId="false">
 			<property name="useActualColumnNames" value="true" />
@@ -64,3 +64,7 @@
 
 	</context>
 </generatorConfiguration>
+
+
+java -cp .;"D:\GIT\maven-repository\org\mybatis\generator\mybatis-generator-core\1.3.5\mybatis-generator-core-1.3.5.jar" org.mybatis.generator.api.ShellRunner -configfile generatorConfig.xml -overwrite
+
