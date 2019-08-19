@@ -80,3 +80,7 @@ cat /proc/cpuinfo| grep "processor"| wc -l
 6、查看CPU信息（型号）
 
 cat /proc/cpuinfo | grep name | cut -f2 -d: | uniq -c
+
+
+不小心执行了 rm -f，先别急着跑路
+如果不小心误删了文件，不要着急，首先使用 lsof 查看打开该文件的进程，然后再使用 cat /proc/进程号/fd/文件描述符 查看恢复数据，最后使用I/O重定向的方式来恢复文件。
