@@ -22,8 +22,8 @@ def create_md():
         print('文件已经存在')
         return
 
-    f = open(dir_name + '.md', 'w')
-    f.write('# '+dir_name)
+    f = open(dir_name + '.md', 'w', encoding='utf-8')
+    f.write('# '+ dir_name)
     f.close()
     return '文件创建成功'
 
