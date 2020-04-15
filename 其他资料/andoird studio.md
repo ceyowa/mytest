@@ -19,3 +19,6 @@ AndroidProguardPlugin
 EventBus3 Intellij Plugin
 
 Exynap 一个帮助开发者自动生成样板代码的 AndroidStudio 插件
+
+
+String Manipulation
