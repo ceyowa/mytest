@@ -126,8 +126,11 @@ class MY_GUI():
         # self.output_txt.configure(yscrollcommand=self.vbar.set)
 
     def on_text_selection(self, event=NONE):
-        selection = self.output_txt.get(SEL_FIRST, SEL_LAST)
-        if len(selection) > 0:
+        try:
+            selection = self.output_txt.get(SEL_FIRST, SEL_LAST)
+        except Exception:
+            selection = NONE
+        if selection is not NONE and len(selection) > 0:
             self.copy_btn.config(state=NORMAL)
         else:
             self.copy_btn.config(state=DISABLED)
@@ -188,6 +191,7 @@ class MY_GUI():
         # 移除之前的选择
         self.output_txt.tag_remove(SEL, '0.0', END)
         # 设置选中状态
+        print("\nstart=%s,end=%s\n" % (index_start, index_end))
         self.output_txt.tag_add(SEL, index_start, index_end)
         self.output_txt.focus_set()
         # self.output_txt.selection_range(index_start, index_end)
