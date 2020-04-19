@@ -176,10 +176,10 @@ class MY_GUI():
         else:
             last_time = time.time_ns()
             results = processer.getDownloadLink(requestUrl)
-            index_start = self.output_txt.index(INSERT)
+            index_start = self.output_txt.index("end-1c linestart")
             for item in results:
                 self.output_txt.insert(END, item + '\n')
-            index_end = self.output_txt.index(INSERT)
+            index_end = self.output_txt.index("end-1c linestart")
             self.output_txt.insert(END, '\n耗时=%d毫秒\n' % ((time.time_ns() - last_time) / 1E6))
 
         self.output_txt.insert(END, '###########################End##########################\n')
@@ -189,7 +189,7 @@ class MY_GUI():
         self.processing = False
 
         # 移除之前的选择
-        self.output_txt.tag_remove(SEL, '0.0', END)
+        self.output_txt.tag_remove(SEL, '1.0', END)
         # 设置选中状态
         print("\nstart=%s,end=%s\n" % (index_start, index_end))
         self.output_txt.tag_add(SEL, index_start, index_end)
