@@ -37,7 +37,12 @@ class Meijubie(BaseWebSiteProcesser):
         # print(r.text)
         # soup = BeautifulSoup(r.text, 'lxml')
         # links = soup.findAll("#downlist1 .ldgcopy")
-        doc = PyQuery(r.text)
+        if r.status_code != 200:
+            raise Exception("Request failed, response code=%d" % r.status_code)
+        return self.doParesHtml(r.text)
+
+    def doParesHtml(self, html):
+        doc = PyQuery(html)
         # print(doc)
         links = doc('#downlist1 script').text().split(';')[0].split('=')[1].strip().replace('"', '').split('###')
         results = []
@@ -185,7 +190,13 @@ class MY_GUI():
             return
 
         last_time = time.time_ns()
-        results = processor.getDownloadLink(request_url)
+        try:
+            results = processor.getDownloadLink(request_url)
+        except Exception as e:
+            self.output_txt.insert(END, '%s\n' % e.args)
+            self.end_process()
+            return
+
         index_start = self.output_txt.index("end-1c linestart")
         for item in results:
             self.output_txt.insert(END, item + '\n')
