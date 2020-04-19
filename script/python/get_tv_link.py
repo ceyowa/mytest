@@ -5,7 +5,7 @@ import queue
 import threading
 import time
 from tkinter import *
-from tkinter import ttk
+from tkinter import ttk, Menu, END
 from tkinter.scrolledtext import ScrolledText
 
 import requests
@@ -25,21 +25,18 @@ class BaseWebSiteProcesser:
         self.webSite = website
 
     def getDownloadLink(self, targetUrl):
-        return []
-
-
-class Meijubie(BaseWebSiteProcesser):
-    def __init__(self):
-        super().__init__("www.meijubie.com")
-
-    def getDownloadLink(self, requestUrl):
-        r = requests.get(requestUrl, headers=headers)
+        r = requests.get(targetUrl, headers=headers)
         # print(r.text)
         # soup = BeautifulSoup(r.text, 'lxml')
         # links = soup.findAll("#downlist1 .ldgcopy")
         if r.status_code != 200:
             raise Exception("Request failed, response code=%d" % r.status_code)
         return self.doParesHtml(r.text)
+
+
+class Meijubie(BaseWebSiteProcesser):
+    def __init__(self):
+        super().__init__("www.meijubie.com")
 
     def doParesHtml(self, html):
         doc = PyQuery(html)
@@ -59,23 +56,14 @@ for f in PROCESS_FUN_LIST:
 PROCESS_FUN_NAME_LIST = list(map(lambda x: x.webSite, PROCESS_FUN_LIST))
 
 
-class MY_GUI():
+class BaseWin:
     def __init__(self, tk_win):
-
         self.tk_win = tk_win
-
-        self.input_url = StringVar()
-        self.input_url.set('https://www.meijubie.com/movie/index44655.html')
-
-        self.processing = False
-        self.selectProcessor = StringVar()
 
         self.init_window()
 
         self.notify_queue = queue.Queue()
         self.process_msg()
-        # 处理请求的个数
-        self.current_name = ''
 
     def process_msg(self):
         # self.tk_win.after(500, self.process_msg)
@@ -87,6 +75,52 @@ class MY_GUI():
         #
         #     except queue.Empty:
         pass
+
+    def init_window(self):
+        self.tk_win.title("网页链接获取")
+        # 窗口宽高为100
+        ww = 800
+        wh = 600
+        self.tk_win.minsize(int(ww / 2), int(wh / 2))
+        # 得到屏幕宽度
+        sw = self.tk_win.winfo_screenwidth()
+        # 得到屏幕高度
+        sh = self.tk_win.winfo_screenheight()
+        # 窗口位置
+        x = (sw - ww) / 2
+        y = (sh - wh) / 2
+        self.tk_win.geometry("%dx%d+%d+%d" % (ww, wh, x, y))
+
+    def cut(self, editor, event=None):
+        editor.event_generate("<<Cut>>")
+
+    def copy(self, editor, event=None):
+        editor.event_generate("<<Copy>>")
+
+    def paste(self, editor, event=None):
+        editor.event_generate('<<Paste>>')
+
+    def rightKey(self, event, editor):
+        menubar = Menu(self.tk_win, tearoff=False)  # 创建一个菜单
+        menubar.delete(0, END)
+        # menubar.add_command(label='剪切', command=lambda: self.cut(editor))
+        menubar.add_command(label='复制', command=lambda: self.copy(editor))
+        # menubar.add_command(label='粘贴', command=lambda: self.paste(editor))
+        menubar.post(event.x_root, event.y_root)
+
+
+class GetResourceApp(BaseWin):
+    def __init__(self, tk_win):
+        BaseWin.__init__(self, tk_win)
+
+        self.input_url = StringVar()
+        self.input_url.set('https://www.meijubie.com/movie/index44655.html')
+
+        self.processing = False
+        self.selectProcessor = StringVar()
+
+        # 处理请求的个数
+        self.current_name = ''
 
     def set_init_window(self):
 
@@ -141,21 +175,6 @@ class MY_GUI():
             self.copy_btn.config(state=NORMAL)
         else:
             self.copy_btn.config(state=DISABLED)
-
-    def init_window(self):
-        self.tk_win.title("网页链接获取")
-        # 窗口宽高为100
-        ww = 800
-        wh = 600
-        self.tk_win.minsize(int(ww / 2), int(wh / 2))
-        # 得到屏幕宽度
-        sw = self.tk_win.winfo_screenwidth()
-        # 得到屏幕高度
-        sh = self.tk_win.winfo_screenheight()
-        # 窗口位置
-        x = (sw - ww) / 2
-        y = (sh - wh) / 2
-        self.tk_win.geometry("%dx%d+%d+%d" % (ww, wh, x, y))
 
     def getResourceLink(self, event=NONE):
         if self.processing:
@@ -218,27 +237,10 @@ class MY_GUI():
         self.output_txt.focus_set()
         # self.output_txt.selection_range(index_start, index_end)
 
-    def cut(self, editor, event=None):
-        editor.event_generate("<<Cut>>")
-
-    def copy(self, editor, event=None):
-        editor.event_generate("<<Copy>>")
-
-    def paste(self, editor, event=None):
-        editor.event_generate('<<Paste>>')
-
-    def rightKey(self, event, editor):
-        menubar = Menu(self.tk_win, tearoff=False)  # 创建一个菜单
-        menubar.delete(0, END)
-        # menubar.add_command(label='剪切', command=lambda: self.cut(editor))
-        menubar.add_command(label='复制', command=lambda: self.copy(editor))
-        # menubar.add_command(label='粘贴', command=lambda: self.paste(editor))
-        menubar.post(event.x_root, event.y_root)
-
 
 def main():
     tk_win = Tk()
-    ui = MY_GUI(tk_win)
+    ui = GetResourceApp(tk_win)
 
     ui.set_init_window()
     tk_win.mainloop()
