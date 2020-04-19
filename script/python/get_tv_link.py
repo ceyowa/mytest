@@ -63,13 +63,14 @@ class MY_GUI():
         self.input_url.set('https://www.meijubie.com/movie/index44655.html')
 
         self.processing = False
-
-        self.selectProcess = StringVar()
+        self.selectProcessor = StringVar()
 
         self.init_window()
 
         self.notify_queue = queue.Queue()
         self.process_msg()
+        # 处理请求的个数
+        self.current_name = ''
 
     def process_msg(self):
         # self.tk_win.after(500, self.process_msg)
@@ -100,7 +101,7 @@ class MY_GUI():
         self.button.grid(row=0, column=2, sticky=E, padx=5)
 
         Label(labelframe, text="处理器", justify=LEFT, width=10).grid(row=1, column=0)
-        select_process = ttk.Combobox(labelframe, textvariable=self.selectProcess,
+        select_process = ttk.Combobox(labelframe, textvariable=self.selectProcessor,
                                       state="readonly",
                                       values=PROCESS_FUN_NAME_LIST,
                                       width=90)
@@ -126,11 +127,12 @@ class MY_GUI():
         # self.output_txt.configure(yscrollcommand=self.vbar.set)
 
     def on_text_selection(self, event=NONE):
-        try:
-            selection = self.output_txt.get(SEL_FIRST, SEL_LAST)
-        except Exception:
-            selection = NONE
-        if selection is not NONE and len(selection) > 0:
+        # try:
+        # selection = self.output_txt.get(SEL_FIRST, SEL_LAST)
+        # except Exception:
+        #     selection = NONE
+        # if selection is not NONE and len(selection) > 0:
+        if self.output_txt.tag_ranges("sel"):
             self.copy_btn.config(state=NORMAL)
         else:
             self.copy_btn.config(state=DISABLED)
@@ -154,40 +156,49 @@ class MY_GUI():
         if self.processing:
             return
         self.processing = True
+        # 创建进度条
+        self.gress_bar = GressBar()
         # 禁用按钮
         self.button.state = DISABLED
         th = threading.Thread(target=self.doGetResourceLink)
         th.setDaemon(True)
         th.start()
         # 启动进度条
-        self.gress_bar = GressBar()
         self.gress_bar.start()
         pass
 
     def doGetResourceLink(self):
-        self.output_txt.insert(END, '##########################Begin#########################\n')
-        requestUrl = self.input_url.get()
-        self.output_txt.insert(END, requestUrl + '\n')
+        self.current_name = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+        self.output_txt.insert(END, '#########################Begin:%s##########################\n' % self.current_name)
+        request_url = self.input_url.get()
+        if not request_url:
+            self.output_txt.insert(END, '请求的网址为空\n')
+            self.end_process()
+            return
+        self.output_txt.insert(END, request_url + '\n')
         self.output_txt.insert(END, '\n')
 
-        processer = PROCESS_FUN_DICT[self.selectProcess.get()]
-        if processer is NONE:
+        processor = PROCESS_FUN_DICT[self.selectProcessor.get()]
+        if processor is None:
             self.output_txt.insert(END, '未找到对应的网站处理器\n')
-        else:
-            last_time = time.time_ns()
-            results = processer.getDownloadLink(requestUrl)
-            index_start = self.output_txt.index("end-1c linestart")
-            for item in results:
-                self.output_txt.insert(END, item + '\n')
-            index_end = self.output_txt.index("end-1c linestart")
-            self.output_txt.insert(END, '\n耗时=%d毫秒\n' % ((time.time_ns() - last_time) / 1E6))
+            self.end_process()
+            return
 
-        self.output_txt.insert(END, '###########################End##########################\n')
+        last_time = time.time_ns()
+        results = processor.getDownloadLink(request_url)
+        index_start = self.output_txt.index("end-1c linestart")
+        for item in results:
+            self.output_txt.insert(END, item + '\n')
+        index_end = self.output_txt.index("end-1c linestart")
+        self.output_txt.insert(END, '\n耗时=%d毫秒\n' % ((time.time_ns() - last_time) / 1E6))
 
+        self.end_process(index_end, index_start)
+
+    def end_process(self, index_end=END, index_start=END):
+        self.output_txt.insert(END, '###########################End:%s##########################\n' % self.current_name)
         self.gress_bar.quit()
         self.button.state = NORMAL
         self.processing = False
-
         # 移除之前的选择
         self.output_txt.tag_remove(SEL, '1.0', END)
         # 设置选中状态
