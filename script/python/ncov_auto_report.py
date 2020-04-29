@@ -2,12 +2,13 @@
 # -*- encoding: utf-8 -*-
 # Created on 2020-04-29 19:16:24
 
-import requests
 import json
 import os
 
-USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.122 Safari/537.36'
+import requests
 
+USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.122 Safari/537.36'
+LOGIN_MOBILE = '18180560355'
 APP_ID = "df626fdc9ad84d3a95633c10124df358"
 SECRE_KEY = "D8FE427008F065C1B781917E82E1EC1E"
 headers = {
@@ -16,15 +17,25 @@ headers = {
     "accesstoken": "null",
     "applyid": APP_ID,
     "secretkey": SECRE_KEY,
-    'User-Agent': USER_AGENT
+    'User-Agent': USER_AGENT,
+    "requesttype": "zuul",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
 }
 jsonHeader = headers.copy()
-jsonHeader['Content-Type'] = 'application/json; charset=utf-8'
+# ; charset=utf-8
+jsonHeader['Content-Type'] = 'application/json'
 
 ACCESS_JSON_FILE_PATH = 'ncov_auto_report.json'
 
 
 class ReportInfo:
+    access_info: object
+
+    def __init__(self):
+        pass
+
     def access_token(self):
         if os.path.exists(ACCESS_JSON_FILE_PATH):
             try:
@@ -44,6 +55,8 @@ class ReportInfo:
 
 
 class AutoReport:
+    user_info: object
+
     def __init__(self):
         self.report_info = ReportInfo()
 
@@ -56,7 +69,7 @@ class AutoReport:
     def login(self):
 
         data = {
-            'mobile': (None, '18180560355'),
+            'mobile': (None, LOGIN_MOBILE),
             'password': (None, 'cetc159357'),
             'client': (None, 'h5')
         }
@@ -75,7 +88,8 @@ class AutoReport:
         result = login_result(
             requests.post('https://asst.cetccloud.com/ncov/login', files=data, verify=False, headers=headers))
         if result and 'userInfo' in result:
-            self.user_ifno = result['userInfo']
+            self.user_info = result['userInfo']
+            self.report_info.save_access_info(self.user_info)
             return True
         raise Exception("登录失败")
 
@@ -108,8 +122,33 @@ class AutoReport:
         pass
 
     def get_report_status(self):
+        def report_result(r):
+            print('report_result :=%s' % r)
+            if r.status_code != 200:
+                raise Exception("Request failed, response code=%d" % r.status_code)
+            r_json = r.json()
+            # if r_json and not r_json['success']:
+            #     raise Exception("Request fail, response code=%d" % r_json['message'])
+            if r_json['code'] != 200:
+                raise Exception("Request failed : %s, \r\n%s" % (r_json['msg'], r_json))
+            if 'data' not in r_json:
+                raise Exception("Request fail, have no data=%d" % r_json)
+            return r_json['data']
+            pass
 
-        pass
+        _token = self.user_info['accessToken']
+        jsonHeader['accesstoken'] = _token
+        data = {
+            "accessToken": _token,
+            "phone": LOGIN_MOBILE
+        }
+        print(jsonHeader)
+        print(data)
+        result = report_result(
+            requests.post('https://asst.cetccloud.com/oort/oortcloud-2019-ncov-report/2019-nCov/report/reportstatus',
+                          data=data, verify=False, headers=jsonHeader))
+        print('report data=%s' % result)
+        return result
 
 
 if __name__ == "__main__":
