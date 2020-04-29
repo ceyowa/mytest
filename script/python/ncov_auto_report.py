@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 # Created on 2020-04-29 19:16:24
-
 import json
 import os
+from datetime import datetime
 
 import requests
 
@@ -62,8 +62,10 @@ class AutoReport:
 
     def start(self):
         self.login()
-        self.get_report_status()
-
+        if self.get_report_status() == 1:
+            print('今日已上报')
+            return
+        self.report_today()
         pass
 
     def login(self):
@@ -148,8 +150,70 @@ class AutoReport:
             requests.post('https://asst.cetccloud.com/oort/oortcloud-2019-ncov-report/2019-nCov/report/reportstatus',
                           data=data, verify=False, headers=jsonHeader))
         print('report data=%s' % result)
-        return result
+        return result['state']
+
+    def report_today(self):
+        _token = self.user_info['accessToken']
+        jsonHeader['accesstoken'] = _token
+        start = datetime(now.year, month=now.month, day=now.day, hour=8, minute=30)
+        end = datetime(now.year, month=now.month, day=now.day, hour=20, minute=30)
+        data = {
+            "phone": LOGIN_MOBILE,
+            "Traffic_data": {
+                "bike": 0,
+                "bike_way": "",
+                "bus": 0,
+                "bus_number": "",
+                "car": 0,
+                "car_way": "",
+                "metro": 0,
+                "metro_number": "",
+                "other": 0,
+                "other_way": "",
+                "walk": 0,
+                "walk_way": "",
+                "phone": LOGIN_MOBILE
+            },
+            "physical_data": {
+                "type1": 0,
+                "type1_state": "0",
+                "type2": 0,
+                "type3": 0,
+                "type4": 0,
+                "type5": 0,
+                "type6": 0,
+                "type7": 0,
+                "type7_state": "",
+                "phone": LOGIN_MOBILE
+            },
+            "track_data": {
+                "tracks": [
+                    {
+                        "area": "四川成都-#-",
+                        "start": '%d000' % start,
+                        "end": '%d000' % end
+                    }
+                ],
+                "phone": LOGIN_MOBILE
+            },
+            "work_way": 0,
+            "touch": 0,
+            "accessToken": _token
+        }
+        print(jsonHeader)
+        print(data)
+        result = report_result(
+            requests.post('https://asst.cetccloud.com/oort/oortcloud-2019-ncov-report/2019-nCov/report/reportstatus',
+                          data=data, verify=False, headers=jsonHeader))
+        print('report data=%s' % result)
+        return result['state']
+        pass
 
 
 if __name__ == "__main__":
     AutoReport().start()
+    # now = datetime.today()
+    # start = datetime(now.year, month=now.month, day=now.day, hour=8, minute=30)
+    # print('%d' % start.timestamp())
+    # print(time.strftime("%Y-%m-%d %H:%M:%S", start.time()))
+    pass

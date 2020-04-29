@@ -193,7 +193,7 @@ class GetResourceApp(BaseWin):
 
     def doGetResourceLink(self):
         self.current_name = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-        self.output_txt.insert(END, '#########################Begin:%s##########################\n' % self.current_name)
+        self.output_txt.insert(END, '#########################Begin:%d##########################\n' % self.current_name)
         request_url = self.input_url.get()
         if not request_url:
             self.output_txt.insert(END, '请求的网址为空\n')
