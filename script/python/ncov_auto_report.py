@@ -13,15 +13,10 @@ APP_ID = "df626fdc9ad84d3a95633c10124df358"
 SECRE_KEY = "D8FE427008F065C1B781917E82E1EC1E"
 headers = {
     "accept": "application/json",
-    "accept-language": "zh-CN,zh;q=0.9",
     "accesstoken": "null",
     "applyid": APP_ID,
     "secretkey": SECRE_KEY,
     'User-Agent': USER_AGENT,
-    "requesttype": "zuul",
-    "sec-fetch-dest": "empty",
-    "sec-fetch-mode": "cors",
-    "sec-fetch-site": "same-origin",
 }
 jsonHeader = headers.copy()
 # ; charset=utf-8
@@ -125,7 +120,7 @@ class AutoReport:
 
     def get_report_status(self):
         def report_status(r):
-            print('report_result :=%s' % r)
+            print('report_status :=%s' % r)
             if r.status_code != 200:
                 raise Exception("Request failed, response code=%d" % r.status_code)
             r_json = r.json()
@@ -155,6 +150,7 @@ class AutoReport:
     def report_today(self):
         _token = self.user_info['accessToken']
         jsonHeader['accesstoken'] = _token
+        now = datetime.today()
         start = datetime(now.year, month=now.month, day=now.day, hour=8, minute=30)
         end = datetime(now.year, month=now.month, day=now.day, hour=20, minute=30)
         data = {
