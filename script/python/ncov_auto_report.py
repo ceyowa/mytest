@@ -134,22 +134,21 @@ class AutoReport:
             pass
 
         _token = self.user_info['accessToken']
-        jsonHeader['accesstoken'] = _token
+        headers['accesstoken'] = _token
         data = {
             "accessToken": _token,
             "phone": LOGIN_MOBILE
         }
-        print(jsonHeader)
+        print(headers)
         print(data)
         result = report_status(
             requests.post('https://asst.cetccloud.com/oort/oortcloud-2019-ncov-report/2019-nCov/report/reportstatus',
-                          data=data, verify=False, headers=jsonHeader))
+                          json=data, verify=False, headers=headers))
         print('report data=%s' % result)
         return result['state']
 
     def report_today(self):
         _token = self.user_info['accessToken']
-        jsonHeader['accesstoken'] = _token
         now = datetime.today()
         start = datetime(now.year, month=now.month, day=now.day, hour=8, minute=30)
         end = datetime(now.year, month=now.month, day=now.day, hour=20, minute=30)
@@ -183,39 +182,38 @@ class AutoReport:
                 "phone": LOGIN_MOBILE
             },
             "track_data": {
-                "tracks": [
+                "tracks": json.dumps([
                     {
-                        "area": "四川成都-#-",
-                        "start": '%d000' % start,
-                        "end": '%d000' % end
+                        "area": "中国 四川省 成都市-#-",
+                        "start": ('%d000' % start.timestamp()),
+                        "end": ('%d000' % end.timestamp())
                     }
-                ],
+                ]),
                 "phone": LOGIN_MOBILE
             },
             "work_way": 0,
             "touch": 0,
             "accessToken": _token
         }
-        print(jsonHeader)
-        print(data)
 
         def report_result(r):
             print('report_result :=%s' % r)
             if r.status_code != 200:
                 raise Exception("Request failed, response code=%d" % r.status_code)
             r_json = r.json()
-            # if r_json and not r_json['success']:
-            #     raise Exception("Request fail, response code=%d" % r_json['message'])
             if r_json['code'] != 200:
                 raise Exception("Request failed : %s, \r\n%s" % (r_json['msg'], r_json))
-            if 'data' not in r_json:
+            if 'msg' not in r_json:
                 raise Exception("Request fail, have no data=%d" % r_json)
-            return r_json['data']
+            return r_json['msg']
             pass
 
+        headers['accesstoken'] = _token
+        # print(headers)
+        print(json.dumps(data))
         result = report_result(
             requests.post('https://asst.cetccloud.com/oort/oortcloud-2019-ncov-report/2019-nCov/report/everyday_report',
-                          data=data, verify=False, headers=jsonHeader))
+                          json=data, verify=False, headers=headers))
         print('report data=%s' % result)
         pass
 
