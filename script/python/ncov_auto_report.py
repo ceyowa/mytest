@@ -124,7 +124,7 @@ class AutoReport:
         pass
 
     def get_report_status(self):
-        def report_result(r):
+        def report_status(r):
             print('report_result :=%s' % r)
             if r.status_code != 200:
                 raise Exception("Request failed, response code=%d" % r.status_code)
@@ -146,7 +146,7 @@ class AutoReport:
         }
         print(jsonHeader)
         print(data)
-        result = report_result(
+        result = report_status(
             requests.post('https://asst.cetccloud.com/oort/oortcloud-2019-ncov-report/2019-nCov/report/reportstatus',
                           data=data, verify=False, headers=jsonHeader))
         print('report data=%s' % result)
@@ -202,11 +202,25 @@ class AutoReport:
         }
         print(jsonHeader)
         print(data)
+
+        def report_result(r):
+            print('report_result :=%s' % r)
+            if r.status_code != 200:
+                raise Exception("Request failed, response code=%d" % r.status_code)
+            r_json = r.json()
+            # if r_json and not r_json['success']:
+            #     raise Exception("Request fail, response code=%d" % r_json['message'])
+            if r_json['code'] != 200:
+                raise Exception("Request failed : %s, \r\n%s" % (r_json['msg'], r_json))
+            if 'data' not in r_json:
+                raise Exception("Request fail, have no data=%d" % r_json)
+            return r_json['data']
+            pass
+
         result = report_result(
-            requests.post('https://asst.cetccloud.com/oort/oortcloud-2019-ncov-report/2019-nCov/report/reportstatus',
+            requests.post('https://asst.cetccloud.com/oort/oortcloud-2019-ncov-report/2019-nCov/report/everyday_report',
                           data=data, verify=False, headers=jsonHeader))
         print('report data=%s' % result)
-        return result['state']
         pass
 
 
