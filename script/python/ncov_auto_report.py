@@ -60,7 +60,7 @@ class ReportRequestError(RuntimeError):
         self.msg = msg
 
     def __str__(self):
-        return repr(self.name + ' : ' + self.msg)
+        return self.name + ' : ' + self.msg
 
 
 class AutoReport:
