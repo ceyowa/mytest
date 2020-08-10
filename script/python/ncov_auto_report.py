@@ -11,11 +11,11 @@ from io import BytesIO
 import requests
 
 import urllib3
+
 # 控制台输出InsecureRequestWarning的问题
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.122 Safari/537.36'
-LOGIN_MOBILE = '18180560355'
 APP_ID = "df626fdc9ad84d3a95633c10124df358"
 SECRE_KEY = "D8FE427008F065C1B781917E82E1EC1E"
 headers = {
@@ -178,11 +178,14 @@ def request_result(request_name, r, raise_fail=True):
         return r_json
     raise ReportRequestError(request_name, "Request fail, response =%s" % r_json)
 
+
 class AutoReport:
     user_info: object
 
-    def __init__(self):
+    def __init__(self, mobile, password):
         self.report_info = ReportInfo()
+        self.mobile = mobile
+        self.password = password
 
     def logged(self):
         return self.user_info
@@ -207,7 +210,6 @@ class AutoReport:
             pass
         pass
 
-
     def get_captcha(self):
         # slide_ypos = 53
         # image = Image.open("ncov_auto_report_big.png")
@@ -221,9 +223,9 @@ class AutoReport:
         # {"code": 200, "data": {"slideID": "d05fed35b9fa486fa3e85b302909a151", "ypos": 82}, "errcode": 200,
         #  "errmsg": "成功", "msg": "成功"}
         result = request_result("getCaptcha",
-                                     requests.post('https://asst.cetccloud.com/oort/oortcloud-sso/sso/v1/getCaptcha',
-                                                   json=data, verify=False,
-                                                   headers=headers))
+                                requests.post('https://asst.cetccloud.com/oort/oortcloud-sso/sso/v1/getCaptcha',
+                                              json=data, verify=False,
+                                              headers=headers))
         if result and 'slideID' in result:
             self.slide_id = result['slideID']
             slide_ypos = result['ypos']
@@ -244,9 +246,9 @@ class AutoReport:
         }
 
         result = request_result("slide_verify",
-                                     requests.post('https://asst.cetccloud.com/oort/oortcloud-sso/sso/v1/slideverify',
-                                                   json=data, verify=False,
-                                                   headers=headers))
+                                requests.post('https://asst.cetccloud.com/oort/oortcloud-sso/sso/v1/slideverify',
+                                              json=data, verify=False,
+                                              headers=headers))
         if result:
             return True
         raise ReportRequestError("slide_verify", "验证码验证失败")
@@ -263,18 +265,19 @@ class AutoReport:
         # a = t.encrypt(e);
         # return a
         data = {
-            'mobile': (None, LOGIN_MOBILE),
-            'password': (None, 'cetc159357'),
+            'mobile': (None, self.mobile),
+            'password': (None, self.password),
             'client': (None, 'h5'),
             'slideID': (None, self.slide_id)
         }
 
         result = request_result("login",
-                                     requests.post('https://asst.cetccloud.com/ncov/login', files=data, verify=False,
-                                                   headers=headers))
+                                requests.post('https://asst.cetccloud.com/ncov/login', files=data, verify=False,
+                                              headers=headers))
         if result and 'userInfo' in result:
             self.user_info = result['userInfo']
             self.report_info.save_access_info(self.user_info)
+            logger.debug("login success")
             return True
         raise ReportRequestError("login", "登录失败")
 
@@ -289,13 +292,12 @@ class AutoReport:
         }
 
         result = request_result("verifyToken",
-                                     requests.post('https://asst.cetccloud.com/oort/oortcloud-sso/sso/v1/verifyToken',
-                                                   json=data,
-                                                   verify=False, headers=jsonHeader), False)
+                                requests.post('https://asst.cetccloud.com/oort/oortcloud-sso/sso/v1/verifyToken',
+                                              json=data,
+                                              verify=False, headers=jsonHeader), False)
         logger.debug('verify_token success')
         if result and 'userInfo' in result:
             self.user_info = result['userInfo']
-            self.report_info.save_access_info(self.user_info)
             jsonHeader['accesstoken'] = _token
             return True
 
@@ -308,14 +310,14 @@ class AutoReport:
         headers['accesstoken'] = _token
         data = {
             "accessToken": _token,
-            "phone": LOGIN_MOBILE
+            "phone": self.mobile
         }
         # logger.debug(headers)
         # logger.debug(data)
         result = request_result("report_status",
-                                     requests.post(
-                                         'https://asst.cetccloud.com/oort/oortcloud-2019-ncov-report/2019-nCov/report/reportstatus',
-                                         json=data, verify=False, headers=headers))
+                                requests.post(
+                                    'https://asst.cetccloud.com/oort/oortcloud-2019-ncov-report/2019-nCov/report/reportstatus',
+                                    json=data, verify=False, headers=headers))
         logger.debug('get_report_status success')
         return result['state']
 
@@ -327,7 +329,7 @@ class AutoReport:
         start = datetime(now.year, month=now.month, day=now.day, hour=8, minute=30)
         end = datetime(now.year, month=now.month, day=now.day, hour=20, minute=30)
         data = {
-            "phone": LOGIN_MOBILE,
+            "phone": self.mobile,
             "Traffic_data": {
                 "bike": 0,
                 "bike_way": "",
@@ -341,7 +343,7 @@ class AutoReport:
                 "other_way": "",
                 "walk": 0,
                 "walk_way": "",
-                "phone": LOGIN_MOBILE
+                "phone": self.mobile
             },
             "physical_data": {
                 "type1": 0,
@@ -353,7 +355,7 @@ class AutoReport:
                 "type6": 0,
                 "type7": 0,
                 "type7_state": "",
-                "phone": LOGIN_MOBILE
+                "phone": self.mobile
             },
             "track_data": {
                 "tracks": json.dumps([
@@ -363,7 +365,7 @@ class AutoReport:
                         "end": ('%d000' % end.timestamp())
                     }
                 ]),
-                "phone": LOGIN_MOBILE
+                "phone": self.mobile
             },
             "work_way": 0,
             "touch": 0,
@@ -372,15 +374,21 @@ class AutoReport:
 
         headers['accesstoken'] = _token
         result = request_result("everyday_report",
-                                     requests.post(
-                                         'https://asst.cetccloud.com/oort/oortcloud-2019-ncov-report/2019-nCov/report/everyday_report',
-                                         json=data, verify=False, headers=headers))
+                                requests.post(
+                                    'https://asst.cetccloud.com/oort/oortcloud-2019-ncov-report/2019-nCov/report/everyday_report',
+                                    json=data, verify=False, headers=headers))
         logger.debug('report_today success')
         pass
 
 
+import sys
+
 if __name__ == "__main__":
-    AutoReport().start()
+    # script,phone_number,password
+    if len(sys.argv) < 3:
+        logger.debug("请输入登录手机号和密码")
+    sc, ph, ps = sys.argv
+    AutoReport(ph, ps).start()
     # AutoReport().get_captcha()
     # now = datetime.today()
     # start = datetime(now.year, month=now.month, day=now.day, hour=8, minute=30)
