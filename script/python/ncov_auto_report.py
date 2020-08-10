@@ -10,6 +10,10 @@ from io import BytesIO
 
 import requests
 
+import urllib3
+# 控制台输出InsecureRequestWarning的问题
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.122 Safari/537.36'
 LOGIN_MOBILE = '18180560355'
 APP_ID = "df626fdc9ad84d3a95633c10124df358"
@@ -41,7 +45,7 @@ with open(LOG_FILE, 'w'):
     pass
 
 with open('ncov_auto_report_logging.yml', 'r', encoding='UTF-8') as f_conf:
-    dict_conf = yaml.load(f_conf)
+    dict_conf = yaml.full_load(f_conf)
 dict_conf['handlers']['file']['filename'] = LOG_FILE
 logging.config.dictConfig(dict_conf)
 logger = logging.getLogger()
@@ -142,7 +146,7 @@ def is_slice_block(img_data, x, y):
     return check_out_border(img_data, x, y) and check_in_border(img_data, x, y) and is_fill_color(img_data, x, y)
 
 
-def get_slice_x_position(img, start_y: 0):
+def get_slice_x_position(img, start_y=0):
     width = img.size[0]
     height = img.size[1]
     img_data = split_array(list(img.getdata()), BIG_IMG_WIDTH)
@@ -161,16 +165,38 @@ def split_array(src, split_len: 10):
     return result
 
 
+def request_result(request_name, r, raise_fail=True):
+    if r.status_code != 200:
+        raise ReportRequestError(request_name, "% s Request failed, response code=%d" % r.status_code)
+    r_json = r.json()
+    if r_json['code'] == 200 or r_json['code'] == '200':
+        if 'data' in r_json:
+            return r_json['data']
+        else:
+            return r_json
+    elif not raise_fail:
+        return r_json
+    raise ReportRequestError(request_name, "Request fail, response =%s" % r_json)
+
 class AutoReport:
     user_info: object
 
     def __init__(self):
         self.report_info = ReportInfo()
 
+    def logged(self):
+        return self.user_info
+
     def start(self):
         try:
-            if self.get_captcha() and self.slide_verify():
-                self.login()
+            # 检查已有的token
+            if not self.verify_token():
+                # 获取滑动验证码
+                if self.get_captcha() and self.slide_verify():
+                    # 登录
+                    self.login()
+            if self.logged():
+                # 检查是否已经报告
                 if self.get_report_status() == 1:
                     logger.debug('今日已上报')
                     return
@@ -181,22 +207,6 @@ class AutoReport:
             pass
         pass
 
-    @staticmethod
-    def request_result(request_name, r):
-        logger.debug('%s result:=%s' % (request_name, r))
-        if r.status_code != 200:
-            raise ReportRequestError(request_name, "% s Request failed, response code=%d" % r.status_code)
-        r_json = r.json()
-        if r_json and r_json['code'] == 200:
-            if 'data' in r_json:
-                return r_json['data']
-            else:
-                return r_json
-        if r_json and not r_json['success']:
-            raise ReportRequestError(request_name, "Request fail, response message=%s" % r_json['message'])
-        if 'data' not in r_json:
-            raise ReportRequestError(request_name, "Request fail, response =%s" % r_json)
-        return r_json['data']
 
     def get_captcha(self):
         # slide_ypos = 53
@@ -210,7 +220,7 @@ class AutoReport:
         # 获取id
         # {"code": 200, "data": {"slideID": "d05fed35b9fa486fa3e85b302909a151", "ypos": 82}, "errcode": 200,
         #  "errmsg": "成功", "msg": "成功"}
-        result = self.request_result("getCaptcha",
+        result = request_result("getCaptcha",
                                      requests.post('https://asst.cetccloud.com/oort/oortcloud-sso/sso/v1/getCaptcha',
                                                    json=data, verify=False,
                                                    headers=headers))
@@ -233,7 +243,7 @@ class AutoReport:
             'slideid': self.slide_id
         }
 
-        result = self.request_result("slide_verify",
+        result = request_result("slide_verify",
                                      requests.post('https://asst.cetccloud.com/oort/oortcloud-sso/sso/v1/slideverify',
                                                    json=data, verify=False,
                                                    headers=headers))
@@ -259,7 +269,7 @@ class AutoReport:
             'slideID': (None, self.slide_id)
         }
 
-        result = self.request_result("login",
+        result = request_result("login",
                                      requests.post('https://asst.cetccloud.com/ncov/login', files=data, verify=False,
                                                    headers=headers))
         if result and 'userInfo' in result:
@@ -278,24 +288,31 @@ class AutoReport:
             'accessToken': _token
         }
 
-        result = self.request_result("refresh_token",
+        result = request_result("verifyToken",
                                      requests.post('https://asst.cetccloud.com/oort/oortcloud-sso/sso/v1/verifyToken',
                                                    json=data,
-                                                   verify=False, headers=jsonHeader))
+                                                   verify=False, headers=jsonHeader), False)
         logger.debug('verify_token success')
-        jsonHeader['accesstoken'] = _token
-        pass
+        if result and 'userInfo' in result:
+            self.user_info = result['userInfo']
+            self.report_info.save_access_info(self.user_info)
+            jsonHeader['accesstoken'] = _token
+            return True
+
+        return False
 
     def get_report_status(self):
+        if not self.logged():
+            raise ReportRequestError("get_report_status", "无accessToken,请先登录")
         _token = self.user_info['accessToken']
         headers['accesstoken'] = _token
         data = {
             "accessToken": _token,
             "phone": LOGIN_MOBILE
         }
-        logger.debug(headers)
-        logger.debug(data)
-        result = self.request_result("report_status",
+        # logger.debug(headers)
+        # logger.debug(data)
+        result = request_result("report_status",
                                      requests.post(
                                          'https://asst.cetccloud.com/oort/oortcloud-2019-ncov-report/2019-nCov/report/reportstatus',
                                          json=data, verify=False, headers=headers))
@@ -303,6 +320,8 @@ class AutoReport:
         return result['state']
 
     def report_today(self):
+        if not self.logged():
+            raise ReportRequestError("get_report_status", "无accessToken,请先登录")
         _token = self.user_info['accessToken']
         now = datetime.today()
         start = datetime(now.year, month=now.month, day=now.day, hour=8, minute=30)
@@ -352,7 +371,7 @@ class AutoReport:
         }
 
         headers['accesstoken'] = _token
-        result = self.request_result("everyday_report",
+        result = request_result("everyday_report",
                                      requests.post(
                                          'https://asst.cetccloud.com/oort/oortcloud-2019-ncov-report/2019-nCov/report/everyday_report',
                                          json=data, verify=False, headers=headers))
