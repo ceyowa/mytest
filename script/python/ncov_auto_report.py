@@ -31,6 +31,21 @@ BIG_IMG_WIDTH = 300
 BIG_IMG_HEIGHT = 150
 SLICE_IMG_WIDTH = 40
 
+import logging
+import logging.config
+import yaml
+
+LOG_FILE = 'ncov_auto_report.log'
+# 清理原始日志
+with open(LOG_FILE, 'w'):
+    pass
+
+with open('ncov_auto_report_logging.yml', 'r', encoding='UTF-8') as f_conf:
+    dict_conf = yaml.load(f_conf)
+dict_conf['handlers']['file']['filename'] = LOG_FILE
+logging.config.dictConfig(dict_conf)
+logger = logging.getLogger()
+
 
 class ReportInfo:
     access_info: object
@@ -97,14 +112,14 @@ def check_border_color(img_data, x, y, width, color):
 
 def check_out_border(img_data, x, y):
     if check_border_color(img_data, x, y, SLICE_IMG_WIDTH, COLOR_BORDER_OUT):
-        print("find out border")
+        logger.debug("find out border")
         return True
     return False
 
 
 def check_in_border(img_data, x, y):
     if check_border_color(img_data, x + 1, y + 1, SLICE_IMG_WIDTH - 2, COLOR_BORDER_IN):
-        print("find in border")
+        logger.debug("find in border")
         return True
     return False
     pass
@@ -157,20 +172,18 @@ class AutoReport:
             if self.get_captcha() and self.slide_verify():
                 self.login()
                 if self.get_report_status() == 1:
-                    print('今日已上报')
-                    self.report_info.save_access_info("今日已上报")
+                    logger.debug('今日已上报')
                     return
                 self.report_today()
         except ReportRequestError as e:
-            print(e.msg)
-            self.report_info.save_access_info(str(e))
+            logger.debug(str(e))
         else:
             pass
         pass
 
     @staticmethod
     def request_result(request_name, r):
-        print('%s result:=%s' % (request_name, r))
+        logger.debug('%s result:=%s' % (request_name, r))
         if r.status_code != 200:
             raise ReportRequestError(request_name, "% s Request failed, response code=%d" % r.status_code)
         r_json = r.json()
@@ -195,6 +208,8 @@ class AutoReport:
             'model': "login"
         }
         # 获取id
+        # {"code": 200, "data": {"slideID": "d05fed35b9fa486fa3e85b302909a151", "ypos": 82}, "errcode": 200,
+        #  "errmsg": "成功", "msg": "成功"}
         result = self.request_result("getCaptcha",
                                      requests.post('https://asst.cetccloud.com/oort/oortcloud-sso/sso/v1/getCaptcha',
                                                    json=data, verify=False,
@@ -208,7 +223,7 @@ class AutoReport:
                 'https://asst.cetccloud.com/oort/oortcloud-sso/slide/v1/%s/big.png?1596675762545' % self.slide_id)
             image = Image.open(BytesIO(get_big_img_response.content))
             self.slice_x = get_slice_x_position(image, slide_ypos)
-            print("slice_y=%d" % self.slice_x)
+            logger.debug("slice_y=%d" % self.slice_x)
             return True
         raise ReportRequestError("getCaptcha", "获取验证码id失败")
 
@@ -219,7 +234,8 @@ class AutoReport:
         }
 
         result = self.request_result("slide_verify",
-                                     requests.post('https://asst.cetccloud.com/oort/oortcloud-sso/sso/v1/slideverify', json=data, verify=False,
+                                     requests.post('https://asst.cetccloud.com/oort/oortcloud-sso/sso/v1/slideverify',
+                                                   json=data, verify=False,
                                                    headers=headers))
         if result:
             return True
@@ -227,6 +243,15 @@ class AutoReport:
 
     def login(self):
 
+        #     var
+        #     t = new
+        #     u["JSEncrypt"]
+        #     , i = "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCgZmNj7QvhbpgdqxN7ZCR+r874KZb/qRvlHRieJJREH+i5/hPbpPH5KheEFxoo7nyAkPIcQYPshHvC4UJBe1HrHjdhjFnMA967aebBtioXBOB0qR4ql0DtWA0PrJWtDABeTpPXedqmzMcYIxr1Wq/viIPsjCHRiyRx6mhYqT5P6wIDAQAB";
+        #
+        # t.setPublicKey(i);
+        # var
+        # a = t.encrypt(e);
+        # return a
         data = {
             'mobile': (None, LOGIN_MOBILE),
             'password': (None, 'cetc159357'),
@@ -245,7 +270,7 @@ class AutoReport:
 
     def verify_token(self):
         _token = self.report_info.access_token()
-        print('Exist token:=%s' % _token)
+
         if not _token:
             return False
         jsonHeader['accesstoken'] = _token
@@ -257,7 +282,7 @@ class AutoReport:
                                      requests.post('https://asst.cetccloud.com/oort/oortcloud-sso/sso/v1/verifyToken',
                                                    json=data,
                                                    verify=False, headers=jsonHeader))
-        print('verify_token result:=%s' % result)
+        logger.debug('verify_token success')
         jsonHeader['accesstoken'] = _token
         pass
 
@@ -268,14 +293,13 @@ class AutoReport:
             "accessToken": _token,
             "phone": LOGIN_MOBILE
         }
-        print(headers)
-        print(data)
+        logger.debug(headers)
+        logger.debug(data)
         result = self.request_result("report_status",
                                      requests.post(
                                          'https://asst.cetccloud.com/oort/oortcloud-2019-ncov-report/2019-nCov/report/reportstatus',
                                          json=data, verify=False, headers=headers))
-        print('report data=%s' % result)
-        self.report_info.save_access_info("get_report_status:%s" % result)
+        logger.debug('get_report_status success')
         return result['state']
 
     def report_today(self):
@@ -328,14 +352,11 @@ class AutoReport:
         }
 
         headers['accesstoken'] = _token
-        # print(headers)
-        # print(json.dumps(data))
         result = self.request_result("everyday_report",
                                      requests.post(
                                          'https://asst.cetccloud.com/oort/oortcloud-2019-ncov-report/2019-nCov/report/everyday_report',
                                          json=data, verify=False, headers=headers))
-        print('report data=%s' % result)
-        self.report_info.save_access_info("report_today:%s" % result)
+        logger.debug('report_today success')
         pass
 
 

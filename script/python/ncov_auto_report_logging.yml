@@ -1,0 +1,26 @@
+version: 1
+formatters:
+  simple:
+    format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+handlers:
+  console:
+    class: logging.StreamHandler
+    level: DEBUG
+    formatter: simple
+    stream: ext://sys.stdout
+  file:
+    level: DEBUG
+    class: logging.handlers.RotatingFileHandler  # 保存到文件
+    formatter: simple
+    filename: ncov_auto_report.log  # 日志文件
+    maxBytes: 300000  # 日志大小 300字节
+    backupCount: 5  # 轮转文件的个数
+    encoding: utf-8  # 日志文件的编码
+loggers:
+  simpleExample:
+    level: DEBUG
+    handlers: [console]
+    propagate: yes
+root:
+  level: DEBUG
+  handlers: [console,file]
