@@ -5,6 +5,8 @@ import codecs
 import json
 import os
 from datetime import datetime
+from PIL import Image
+from io import BytesIO
 
 import requests
 
@@ -24,6 +26,10 @@ jsonHeader = headers.copy()
 jsonHeader['Content-Type'] = 'application/json'
 
 ACCESS_JSON_FILE_PATH = 'ncov_auto_report.json'
+
+BIG_IMG_WIDTH = 300
+BIG_IMG_HEIGHT = 150
+SLICE_IMG_WIDTH = 40
 
 
 class ReportInfo:
@@ -95,12 +101,24 @@ class AutoReport:
             raise ReportRequestError(request_name, "Request fail, response =%s" % r_json)
         return r_json['data']
 
+    def getCaptcha(self):
+        result = self.request_result("getCaptcha",
+                                     requests.post('https://asst.cetccloud.com/oort/oortcloud-sso/sso/v1/getCaptcha', files=data, verify=False,
+                                                   headers=headers))
+        if result and 'slideID' in result:
+            self.slide_id = result['slideID']
+            self.slide_ypos = result['ypos']
+
+            get_big_img_response = requests.get('https://asst.cetccloud.com/oort/oortcloud-sso/slide/v1/%s/big.png?1596675762545' % self.slide_id)
+            image = Image.open(BytesIO(get_big_img_response.content))
+
+            return True
+        raise ReportRequestError("getCaptcha", "获取验证码id失败")
+
     def login(self):
 
         data = {
-            'mobile': (None, LOGIN_MOBILE),
-            'password': (None, 'cetc159357'),
-            'client': (None, 'h5')
+            'model': "login"
         }
 
         result = self.request_result("login",
@@ -110,7 +128,7 @@ class AutoReport:
             self.user_info = result['userInfo']
             self.report_info.save_access_info(self.user_info)
             return True
-        raise ReportRequestError(request_name, "登录失败")
+        raise ReportRequestError("login", "登录失败")
 
     def verify_token(self):
         _token = self.report_info.access_token()
