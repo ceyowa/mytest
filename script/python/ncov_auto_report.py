@@ -16,13 +16,9 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.122 Safari/537.36'
-APP_ID = "df626fdc9ad84d3a95633c10124df358"
-SECRE_KEY = "D8FE427008F065C1B781917E82E1EC1E"
 headers = {
     "accept": "application/json",
     "accesstoken": "null",
-    "applyid": APP_ID,
-    "secretkey": SECRE_KEY,
     'User-Agent': USER_AGENT,
 }
 jsonHeader = headers.copy()
@@ -381,14 +377,23 @@ class AutoReport:
         pass
 
 
-import sys
+import argparse
 
 if __name__ == "__main__":
-    # script,phone_number,password
-    if len(sys.argv) < 3:
-        logger.debug("请输入登录手机号和密码")
-    sc, ph, ps = sys.argv
-    AutoReport(ph, ps).start()
+    parser = argparse.ArgumentParser(usage="it's usage tip.", description="help info.")
+
+    parser.add_argument("-u", required=True, dest="user", help="the login user name.")
+    parser.add_argument("-p", required=True, dest="password", help="the login password.")
+    parser.add_argument("-s", dest="secret_key", default='D8FE427008F065C1B781917E82E1EC1E',
+                        help="the 'secretKey' in header.")
+    parser.add_argument("-a", dest="app_id", default='df626fdc9ad84d3a95633c10124df358',
+                        help="the 'applyId' in header.")
+    args = parser.parse_args()
+
+    headers['secretKey'] = args.secret_key
+    headers['applyID'] = args.secret_key
+
+    AutoReport(args.user, args.password).start()
     # AutoReport().get_captcha()
     # now = datetime.today()
     # start = datetime(now.year, month=now.month, day=now.day, hour=8, minute=30)
