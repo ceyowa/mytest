@@ -69,6 +69,83 @@ class ReportRequestError(RuntimeError):
         return self.name + ' : ' + self.msg
 
 
+# 滑动块的外边框颜色
+COLOR_BORDER_OUT = (255, 255, 0)
+COLOR_BORDER_IN = (0, 0, 0)
+COLOR_FILL = (128, 128, 128)
+
+
+def check_border_color(img_data, x, y, width, color):
+    x1 = x + width - 1
+    y1 = y + width - 1
+
+    for step in range(0, width):
+        pix = img_data[y][x + step]
+        if pix != color:
+            return False
+        pix = img_data[y + step][x]
+        if pix != color:
+            return False
+        pix = img_data[y1][x1 - step]
+        if pix != color:
+            return False
+        pix = img_data[y1 - step][x1]
+        if pix != color:
+            return False
+    return True
+
+
+def check_out_border(img_data, x, y):
+    if check_border_color(img_data, x, y, SLICE_IMG_WIDTH, COLOR_BORDER_OUT):
+        print("find out border")
+        return True
+    return False
+
+
+def check_in_border(img_data, x, y):
+    if check_border_color(img_data, x + 1, y + 1, SLICE_IMG_WIDTH - 2, COLOR_BORDER_IN):
+        print("find in border")
+        return True
+    return False
+    pass
+
+
+def is_fill_color(img_data, x, y):
+    x = x + 2
+    y = y + 2
+    width = SLICE_IMG_WIDTH - 4
+    for i in range(0, width):
+        for j in range(0, width):
+            pix = img_data[y + j][x + i]
+            if pix != COLOR_FILL:
+                return False
+    return True
+    pass
+
+
+def is_slice_block(img_data, x, y):
+    return check_out_border(img_data, x, y) and check_in_border(img_data, x, y) and is_fill_color(img_data, x, y)
+
+
+def get_slice_x_position(img, start_y: 0):
+    width = img.size[0]
+    height = img.size[1]
+    img_data = split_array(list(img.getdata()), BIG_IMG_WIDTH)
+    for x in range(0, width - SLICE_IMG_WIDTH):
+        for y in range(start_y, min(start_y + SLICE_IMG_WIDTH, height - SLICE_IMG_WIDTH)):
+            pix = img_data[y][x]
+            if COLOR_BORDER_OUT == pix and is_slice_block(img_data, x, y):
+                return x
+    return -1
+
+
+def split_array(src, split_len: 10):
+    result = []
+    for i in range(0, len(src), split_len):
+        result.append(src[i:i + split_len])
+    return result
+
+
 class AutoReport:
     user_info: object
 
@@ -77,11 +154,13 @@ class AutoReport:
 
     def start(self):
         try:
-            self.login()
-            if self.get_report_status() == 1:
-                print('今日已上报')
-                return
-            self.report_today()
+            if self.get_captcha() and self.slide_verify():
+                self.login()
+                if self.get_report_status() == 1:
+                    print('今日已上报')
+                    self.report_info.save_access_info("今日已上报")
+                    return
+                self.report_today()
         except ReportRequestError as e:
             print(e.msg)
             self.report_info.save_access_info(str(e))
@@ -95,30 +174,64 @@ class AutoReport:
         if r.status_code != 200:
             raise ReportRequestError(request_name, "% s Request failed, response code=%d" % r.status_code)
         r_json = r.json()
+        if r_json and r_json['code'] == 200:
+            if 'data' in r_json:
+                return r_json['data']
+            else:
+                return r_json
         if r_json and not r_json['success']:
             raise ReportRequestError(request_name, "Request fail, response message=%s" % r_json['message'])
         if 'data' not in r_json:
             raise ReportRequestError(request_name, "Request fail, response =%s" % r_json)
         return r_json['data']
 
-    def getCaptcha(self):
+    def get_captcha(self):
+        # slide_ypos = 53
+        # image = Image.open("ncov_auto_report_big.png")
+        # slice_x = get_slice_x_position(image, slide_ypos)
+        # print("slice_y=%d" % slice_x)
+
+        data = {
+            'model': "login"
+        }
+        # 获取id
         result = self.request_result("getCaptcha",
-                                     requests.post('https://asst.cetccloud.com/oort/oortcloud-sso/sso/v1/getCaptcha', files=data, verify=False,
+                                     requests.post('https://asst.cetccloud.com/oort/oortcloud-sso/sso/v1/getCaptcha',
+                                                   json=data, verify=False,
                                                    headers=headers))
         if result and 'slideID' in result:
             self.slide_id = result['slideID']
-            self.slide_ypos = result['ypos']
+            slide_ypos = result['ypos']
 
-            get_big_img_response = requests.get('https://asst.cetccloud.com/oort/oortcloud-sso/slide/v1/%s/big.png?1596675762545' % self.slide_id)
+            # 获取图片
+            get_big_img_response = requests.get(
+                'https://asst.cetccloud.com/oort/oortcloud-sso/slide/v1/%s/big.png?1596675762545' % self.slide_id)
             image = Image.open(BytesIO(get_big_img_response.content))
-
+            self.slice_x = get_slice_x_position(image, slide_ypos)
+            print("slice_y=%d" % self.slice_x)
             return True
         raise ReportRequestError("getCaptcha", "获取验证码id失败")
+
+    def slide_verify(self):
+        data = {
+            'xpos': self.slice_x,
+            'slideid': self.slide_id
+        }
+
+        result = self.request_result("slide_verify",
+                                     requests.post('https://asst.cetccloud.com/oort/oortcloud-sso/sso/v1/slideverify', json=data, verify=False,
+                                                   headers=headers))
+        if result:
+            return True
+        raise ReportRequestError("slide_verify", "验证码验证失败")
 
     def login(self):
 
         data = {
-            'model': "login"
+            'mobile': (None, LOGIN_MOBILE),
+            'password': (None, 'cetc159357'),
+            'client': (None, 'h5'),
+            'slideID': (None, self.slide_id)
         }
 
         result = self.request_result("login",
@@ -142,7 +255,7 @@ class AutoReport:
 
         result = self.request_result("refresh_token",
                                      requests.post('https://asst.cetccloud.com/oort/oortcloud-sso/sso/v1/verifyToken',
-                                                   data=data,
+                                                   json=data,
                                                    verify=False, headers=jsonHeader))
         print('verify_token result:=%s' % result)
         jsonHeader['accesstoken'] = _token
@@ -162,6 +275,7 @@ class AutoReport:
                                          'https://asst.cetccloud.com/oort/oortcloud-2019-ncov-report/2019-nCov/report/reportstatus',
                                          json=data, verify=False, headers=headers))
         print('report data=%s' % result)
+        self.report_info.save_access_info("get_report_status:%s" % result)
         return result['state']
 
     def report_today(self):
@@ -215,16 +329,19 @@ class AutoReport:
 
         headers['accesstoken'] = _token
         # print(headers)
-        print(json.dumps(data))
+        # print(json.dumps(data))
         result = self.request_result("everyday_report",
-            requests.post('https://asst.cetccloud.com/oort/oortcloud-2019-ncov-report/2019-nCov/report/everyday_report',
-                          json=data, verify=False, headers=headers))
+                                     requests.post(
+                                         'https://asst.cetccloud.com/oort/oortcloud-2019-ncov-report/2019-nCov/report/everyday_report',
+                                         json=data, verify=False, headers=headers))
         print('report data=%s' % result)
+        self.report_info.save_access_info("report_today:%s" % result)
         pass
 
 
 if __name__ == "__main__":
     AutoReport().start()
+    # AutoReport().get_captcha()
     # now = datetime.today()
     # start = datetime(now.year, month=now.month, day=now.day, hour=8, minute=30)
     # print('%d' % start.timestamp())
