@@ -199,7 +199,7 @@ class AutoReport:
     def logged(self):
         return self.user_info
 
-    @sleep_random(1, 3)
+    @sleep_random(0, 600)
     def start(self):
         logger.debug("start func begin")
         try:
@@ -251,7 +251,7 @@ class AutoReport:
             return True
         raise ReportRequestError("getCaptcha", "获取验证码id失败")
 
-    @sleep_random(0, 3)
+    @sleep_random(1, 5)
     def slide_verify(self):
         data = {
             'xpos': self.slice_x,
@@ -337,7 +337,7 @@ class AutoReport:
         logger.debug('get_report_status success')
         return result['state']
 
-    @sleep_random(0, 3)
+    @sleep_random(1, 5)
     def report_today(self):
         if not self.logged():
             raise ReportRequestError("get_report_status", "无accessToken,请先登录")
