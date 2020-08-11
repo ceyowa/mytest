@@ -4,6 +4,8 @@
 import codecs
 import json
 import os
+import random
+import time
 from datetime import datetime
 from PIL import Image
 from io import BytesIO
@@ -175,6 +177,17 @@ def request_result(request_name, r, raise_fail=True):
     raise ReportRequestError(request_name, "Request fail, response =%s" % r_json)
 
 
+def sleep_random(a=1, b=5):
+    def before_proxy(func):
+        def sleep_on_before(*arguments):
+            time.sleep(random.randint(a, b))
+            return func(*arguments)
+
+        return sleep_on_before
+
+    return before_proxy
+
+
 class AutoReport:
     user_info: object
 
@@ -186,7 +199,9 @@ class AutoReport:
     def logged(self):
         return self.user_info
 
+    @sleep_random(1, 3)
     def start(self):
+        logger.debug("start func begin")
         try:
             # 检查已有的token
             if not self.verify_token():
@@ -206,6 +221,7 @@ class AutoReport:
             pass
         pass
 
+    @sleep_random(0, 3)
     def get_captcha(self):
         # slide_ypos = 53
         # image = Image.open("ncov_auto_report_big.png")
@@ -235,6 +251,7 @@ class AutoReport:
             return True
         raise ReportRequestError("getCaptcha", "获取验证码id失败")
 
+    @sleep_random(0, 3)
     def slide_verify(self):
         data = {
             'xpos': self.slice_x,
@@ -249,6 +266,7 @@ class AutoReport:
             return True
         raise ReportRequestError("slide_verify", "验证码验证失败")
 
+    @sleep_random(0, 3)
     def login(self):
 
         #     var
@@ -277,6 +295,7 @@ class AutoReport:
             return True
         raise ReportRequestError("login", "登录失败")
 
+    @sleep_random(1, 5)
     def verify_token(self):
         _token = self.report_info.access_token()
 
@@ -299,6 +318,7 @@ class AutoReport:
 
         return False
 
+    @sleep_random(0, 3)
     def get_report_status(self):
         if not self.logged():
             raise ReportRequestError("get_report_status", "无accessToken,请先登录")
@@ -317,6 +337,7 @@ class AutoReport:
         logger.debug('get_report_status success')
         return result['state']
 
+    @sleep_random(0, 3)
     def report_today(self):
         if not self.logged():
             raise ReportRequestError("get_report_status", "无accessToken,请先登录")
@@ -380,6 +401,7 @@ class AutoReport:
 import argparse
 
 if __name__ == "__main__":
+    logger.debug("main start")
     parser = argparse.ArgumentParser(usage="it's usage tip.", description="help info.")
 
     parser.add_argument("-u", required=True, dest="user", help="the login user name.")
