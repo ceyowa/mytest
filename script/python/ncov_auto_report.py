@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
+# Author. ceyowa
 # Created on 2020-04-29 19:16:24
-# 郑重声明:本脚本仅限用于学习和研究目的；不得将上述内容用于商业或者非法用途，否则，一切后果请自负! -- by ceyowa
+# 郑重声明:本脚本仅限用于学习和研究目的；不得用于任何商业或者非法用途，否则，一切后果请自负!
 import codecs
 import json
 import os
@@ -16,30 +17,40 @@ import requests
 import urllib3
 
 import argparse
+import sys
 
+import logging
+import logging.config
+import yaml
 
 # 控制台输出InsecureRequestWarning的问题
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+# 全局变量,指示是否需要随机等待再执行操作,详见sleep_random装饰函数
+NEED_RANDOM_SLEEP = False
+# 请求基地址
 BASE_URL = 'https://asst.cetccloud.com'
+# 请求模拟的客户端
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.122 Safari/537.36'
+# 请求头
 headers = {
     "accept": "application/json",
     "accesstoken": "null",
     'User-Agent': USER_AGENT,
 }
+# json请求头
 jsonHeader = headers.copy()
 # ; charset=utf-8
 jsonHeader['Content-Type'] = 'application/json'
 
+# access token暂存文件名
 ACCESS_JSON_FILE_PATH = 'ncov_auto_report.json'
 
+# 验证码大图宽度
 BIG_IMG_WIDTH = 300
+# 验证码大图高度
 BIG_IMG_HEIGHT = 150
+# 验证码滑动块大小大图高度
 SLICE_IMG_WIDTH = 40
-
-import logging
-import logging.config
-import yaml
 
 LOG_FILE = 'ncov_auto_report.log'
 # 清理原始日志
@@ -51,6 +62,16 @@ with open('ncov_auto_report_logging.yml', 'r', encoding='UTF-8') as f_conf:
 dict_conf['handlers']['file']['filename'] = LOG_FILE
 logging.config.dictConfig(dict_conf)
 logger = logging.getLogger()
+
+
+# print(sys.argv[0])
+with open(__file__, 'r', encoding='UTF-8') as self_f:
+    for line in self_f:
+        if not line.startswith("#"):
+            break
+        if line.startswith("# 郑重声明"):
+            print(line)
+            break
 
 
 class ReportInfo:
@@ -179,9 +200,6 @@ def request_result(request_name, r, raise_fail=True):
     elif not raise_fail:
         return r_json
     raise ReportRequestError(request_name, "Request fail, response =%s" % r_json)
-
-
-NEED_RANDOM_SLEEP = True
 
 
 def sleep_random(a=1, b=5):
@@ -407,9 +425,8 @@ class AutoReport:
         logger.debug('report_today success')
         pass
 
+
 if __name__ == "__main__":
-    print("郑重声明:本脚本仅限用于学习和研究目的；不得用于任何商业或者非法用途，否则，一切后果请自负! -- by ceyowa")
-    logger.debug("main start")
     parser = argparse.ArgumentParser(usage="it's usage tip.", description="help info.")
 
     parser.add_argument("-u", required=True, dest="user", help="the login user name.")
@@ -418,7 +435,10 @@ if __name__ == "__main__":
                         help="the 'secretKey' in header.")
     parser.add_argument("-a", dest="app_id", default='df626fdc9ad84d3a95633c10124df358',
                         help="the 'applyId' in header.")
+    parser.print_help()
     args = parser.parse_args()
+
+    logger.debug("main start")
 
     headers['secretKey'] = args.secret_key
     headers['applyID'] = args.secret_key
