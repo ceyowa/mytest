@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 # Created on 2020-04-29 19:16:24
+# 本脚本仅限用于学习和研究目的；不得将上述内容用于商业或者非法用途，否则，一切后果请自负! -- by ceyowa
 import codecs
 import json
 import os
@@ -14,9 +15,12 @@ import requests
 
 import urllib3
 
+import argparse
+
+
 # 控制台输出InsecureRequestWarning的问题
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
+BASE_URL = 'https://asst.cetccloud.com'
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.122 Safari/537.36'
 headers = {
     "accept": "application/json",
@@ -177,10 +181,16 @@ def request_result(request_name, r, raise_fail=True):
     raise ReportRequestError(request_name, "Request fail, response =%s" % r_json)
 
 
+NEED_RANDOM_SLEEP = True
+
+
 def sleep_random(a=1, b=5):
     def before_proxy(func):
         def sleep_on_before(*arguments):
-            time.sleep(random.randint(a, b))
+            if NEED_RANDOM_SLEEP:
+                randint = random.randint(a, b)
+                logger.info("random sleep %ds" % randint)
+                time.sleep(randint)
             return func(*arguments)
 
         return sleep_on_before
@@ -235,7 +245,7 @@ class AutoReport:
         # {"code": 200, "data": {"slideID": "d05fed35b9fa486fa3e85b302909a151", "ypos": 82}, "errcode": 200,
         #  "errmsg": "成功", "msg": "成功"}
         result = request_result("getCaptcha",
-                                requests.post('https://asst.cetccloud.com/oort/oortcloud-sso/sso/v1/getCaptcha',
+                                requests.post(BASE_URL + '/oort/oortcloud-sso/sso/v1/getCaptcha',
                                               json=data, verify=False,
                                               headers=headers))
         if result and 'slideID' in result:
@@ -244,7 +254,7 @@ class AutoReport:
 
             # 获取图片
             get_big_img_response = requests.get(
-                'https://asst.cetccloud.com/oort/oortcloud-sso/slide/v1/%s/big.png?1596675762545' % self.slide_id)
+                BASE_URL + '/oort/oortcloud-sso/slide/v1/%s/big.png?1596675762545' % self.slide_id)
             image = Image.open(BytesIO(get_big_img_response.content))
             self.slice_x = get_slice_x_position(image, slide_ypos)
             logger.debug("slice_y=%d" % self.slice_x)
@@ -259,7 +269,7 @@ class AutoReport:
         }
 
         result = request_result("slide_verify",
-                                requests.post('https://asst.cetccloud.com/oort/oortcloud-sso/sso/v1/slideverify',
+                                requests.post(BASE_URL + '/oort/oortcloud-sso/sso/v1/slideverify',
                                               json=data, verify=False,
                                               headers=headers))
         if result:
@@ -286,7 +296,7 @@ class AutoReport:
         }
 
         result = request_result("login",
-                                requests.post('https://asst.cetccloud.com/ncov/login', files=data, verify=False,
+                                requests.post(BASE_URL + '/ncov/login', files=data, verify=False,
                                               headers=headers))
         if result and 'userInfo' in result:
             self.user_info = result['userInfo']
@@ -307,7 +317,7 @@ class AutoReport:
         }
 
         result = request_result("verifyToken",
-                                requests.post('https://asst.cetccloud.com/oort/oortcloud-sso/sso/v1/verifyToken',
+                                requests.post(BASE_URL + '/oort/oortcloud-sso/sso/v1/verifyToken',
                                               json=data,
                                               verify=False, headers=jsonHeader), False)
         logger.debug('verify_token success')
@@ -332,7 +342,7 @@ class AutoReport:
         # logger.debug(data)
         result = request_result("report_status",
                                 requests.post(
-                                    'https://asst.cetccloud.com/oort/oortcloud-2019-ncov-report/2019-nCov/report/reportstatus',
+                                    BASE_URL + '/oort/oortcloud-2019-ncov-report/2019-nCov/report/reportstatus',
                                     json=data, verify=False, headers=headers))
         logger.debug('get_report_status success')
         return result['state']
@@ -392,15 +402,13 @@ class AutoReport:
         headers['accesstoken'] = _token
         result = request_result("everyday_report",
                                 requests.post(
-                                    'https://asst.cetccloud.com/oort/oortcloud-2019-ncov-report/2019-nCov/report/everyday_report',
+                                    BASE_URL + '/oort/oortcloud-2019-ncov-report/2019-nCov/report/everyday_report',
                                     json=data, verify=False, headers=headers))
         logger.debug('report_today success')
         pass
 
-
-import argparse
-
 if __name__ == "__main__":
+    print("本脚本仅限用于学习和研究目的；不得用于任何商业或者非法用途，否则，一切后果请自负! -- by ceyowa")
     logger.debug("main start")
     parser = argparse.ArgumentParser(usage="it's usage tip.", description="help info.")
 
