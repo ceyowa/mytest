@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 # Created on 2020-04-29 19:16:24
-# 本脚本仅限用于学习和研究目的；不得将上述内容用于商业或者非法用途，否则，一切后果请自负! -- by ceyowa
+# 郑重声明:本脚本仅限用于学习和研究目的；不得将上述内容用于商业或者非法用途，否则，一切后果请自负! -- by ceyowa
 import codecs
 import json
 import os
@@ -408,7 +408,7 @@ class AutoReport:
         pass
 
 if __name__ == "__main__":
-    print("本脚本仅限用于学习和研究目的；不得用于任何商业或者非法用途，否则，一切后果请自负! -- by ceyowa")
+    print("郑重声明:本脚本仅限用于学习和研究目的；不得用于任何商业或者非法用途，否则，一切后果请自负! -- by ceyowa")
     logger.debug("main start")
     parser = argparse.ArgumentParser(usage="it's usage tip.", description="help info.")
 
