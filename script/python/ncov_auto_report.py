@@ -190,7 +190,8 @@ def split_array(src, split_len: 10):
 
 def request_result(request_name, r, raise_fail=True):
     if r.status_code != 200:
-        raise ReportRequestError(request_name, "% s Request failed, response code=%d" % r.status_code)
+        raise ReportRequestError(
+            request_name, "Request failed, response code=%d" % r.status_code)
     r_json = r.json()
     if r_json['code'] == 200 or r_json['code'] == '200':
         if 'data' in r_json:
@@ -199,7 +200,8 @@ def request_result(request_name, r, raise_fail=True):
             return r_json
     elif not raise_fail:
         return r_json
-    raise ReportRequestError(request_name, "Request fail, response =%s" % r_json)
+    raise ReportRequestError(
+        request_name, "Request fail, response =%s" % r_json)
 
 
 def sleep_random(a=1, b=5):
@@ -223,12 +225,15 @@ class AutoReport:
         self.report_info = ReportInfo()
         self.mobile = mobile
         self.password = password
+        self.reported = False
 
     def logged(self):
         return self.user_info
 
     @sleep_random(0, 600)
     def start(self):
+        if self.reported:
+            return
         logger.debug("start func begin")
         try:
             # 检查已有的token
@@ -241,8 +246,10 @@ class AutoReport:
                 # 检查是否已经报告
                 if self.get_report_status() == 1:
                     logger.debug('今日已上报')
+                    # self.reported = True
                     return
                 self.report_today()
+                # self.reported = True
         except ReportRequestError as e:
             logger.debug(str(e))
         else:
@@ -371,8 +378,10 @@ class AutoReport:
             raise ReportRequestError("get_report_status", "无accessToken,请先登录")
         _token = self.user_info['accessToken']
         now = datetime.today()
-        start = datetime(now.year, month=now.month, day=now.day, hour=8, minute=30)
-        end = datetime(now.year, month=now.month, day=now.day, hour=20, minute=30)
+        start = datetime(now.year, month=now.month,
+                         day=now.day, hour=8, minute=30)
+        end = datetime(now.year, month=now.month,
+                       day=now.day, hour=20, minute=30)
         data = {
             "phone": self.mobile,
             "Traffic_data": {
@@ -427,10 +436,13 @@ class AutoReport:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(usage="it's usage tip.", description="help info.")
+    parser = argparse.ArgumentParser(
+        usage="it's usage tip.", description="help info.")
 
-    parser.add_argument("-u", required=True, dest="user", help="the login user name.")
-    parser.add_argument("-p", required=True, dest="password", help="the login password.")
+    parser.add_argument("-u", required=True, dest="user",
+                        help="the login user name.")
+    parser.add_argument("-p", required=True, dest="password",
+                        help="the login password.")
     parser.add_argument("-s", dest="secret_key", default='D8FE427008F065C1B781917E82E1EC1E',
                         help="the 'secretKey' in header.")
     parser.add_argument("-a", dest="app_id", default='df626fdc9ad84d3a95633c10124df358',
@@ -443,7 +455,17 @@ if __name__ == "__main__":
     headers['secretKey'] = args.secret_key
     headers['applyID'] = args.secret_key
 
-    AutoReport(args.user, args.password).start()
+    reporter = AutoReport(args.user, args.password)
+    reporter.start()
+
+    while not reporter.reported:
+        logger.debug("wait next time to try again")
+        # 随机等待半小时至1小时后尝试
+        randint = random.randint(30*60, 60*60)
+        time.sleep(randint)
+        logger.debug("start try again")
+        reporter.start()
+        pass
     # AutoReport().get_captcha()
     # now = datetime.today()
     # start = datetime(now.year, month=now.month, day=now.day, hour=8, minute=30)
