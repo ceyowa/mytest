@@ -246,10 +246,10 @@ class AutoReport:
                 # 检查是否已经报告
                 if self.get_report_status() == 1:
                     logger.debug('今日已上报')
-                    # self.reported = True
+                    self.reported = True
                     return
                 self.report_today()
-                # self.reported = True
+                self.reported = True
         except ReportRequestError as e:
             logger.debug(str(e))
         else:
