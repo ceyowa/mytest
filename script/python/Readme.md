@@ -14,6 +14,8 @@ python -m http.server 8888
 
 `pip install -r requirements.txt`
 
+
+
 # 文件列表
 
 |文件名  |说明   |
@@ -21,3 +23,8 @@ python -m http.server 8888
 |GetBaiduPanCookies.py  | 获取百度网盘cookies         |
 |getPath.py         |获取当前路径       |
 |get_tv_link.py     |获取下载链接  |
+
+
+## 参考资料
+
+- [GitHub出了一款爬虫神器！还给出了详细教程！](https://github.com/justinzm/gopup)
