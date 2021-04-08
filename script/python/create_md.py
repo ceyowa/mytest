@@ -24,7 +24,13 @@ def create_md():
 
     f = open(dir_name + '.md', 'w', encoding='utf-8')
     f.write('# '+ dir_name)
-    f.close()
+    f.write('\r\n')
+    f.write('## 需求')
+    f.write('\r\n')
+    f.write('## 发布')
+    f.write('\r\n')
+    f.write('## 测试')
+    f.write('\r\n')
     return '文件创建成功'
 
 
